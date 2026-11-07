@@ -1,6 +1,6 @@
 # Campus Incident Reporting — Technical Report
 
-**Student:** Elijah Laddie
+**Student:** ELie Kuradusenge
 **Course:** Mobile Application Development — Formative Assignment 2
 **Application:** `campus_incident_app` (Flutter, Android / iOS / Web)
 **Date:** November 2026
