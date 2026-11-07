@@ -1,0 +1,38 @@
+rules_version = '2';
+
+// Campus Incident Reporting - Cloud Storage Security Rules
+//
+// Paste into Firebase Console -> Storage -> Rules, or deploy with
+//   firebase deploy --only storage
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    // incident_photos/{uid}/{incidentId}.jpg
+    match /incident_photos/{uid}/{fileName} {
+      // Photos are shown on incident cards, so any signed-in user may read them.
+      allow read: if isSignedIn();
+
+      // Uploads: verified user, own folder only, real images, under 5 MB.
+      allow create, update: if isVerified()
+        && request.auth.uid == uid
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+
+      // A user may remove a photo from their own folder.
+      allow delete: if isVerified() && request.auth.uid == uid;
+    }
+
+    // Everything else is denied.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

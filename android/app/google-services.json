@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "418521350029",
+    "project_id": "incident-report-app-1d35b",
+    "storage_bucket": "incident-report-app-1d35b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:418521350029:android:831dda3fe8a6db738f47c4",
+        "android_client_info": {
+          "package_name": "com.alulearning.incidentreport"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCnOFbMDRs0ixwHz3ixmCjNJF673MA2_1A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
