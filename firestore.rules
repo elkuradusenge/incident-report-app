@@ -1,0 +1,77 @@
+rules_version = '2';
+
+// Campus Incident Reporting - Firestore Security Rules
+//
+// Paste into Firebase Console -> Firestore Database -> Rules, or deploy with
+//   firebase deploy --only firestore:rules
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---- helpers -----------------------------------------------------------
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Every write requires a signed-in account with a verified email address.
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function role() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isStaff() {
+      return isVerified() && role() == 'staff';
+    }
+
+    // ---- users -------------------------------------------------------------
+
+    match /users/{uid} {
+      // A user may only read their own profile.
+      allow read: if isSignedIn() && request.auth.uid == uid;
+
+      // Written during registration, which happens before the email is verified,
+      // so this rule checks sign-in rather than verification. Role can only ever
+      // self-assign as "student"; staff roles are set by an administrator.
+      allow create: if isSignedIn()
+        && request.auth.uid == uid
+        && request.resource.data.uid == uid
+        && request.resource.data.role == 'student';
+
+      // Profile edits are allowed (department, location, phone...) but the role
+      // can never be changed by the owner.
+      allow update: if isSignedIn()
+        && request.auth.uid == uid
+        && request.resource.data.role == resource.data.role;
+
+      allow delete: if false;
+    }
+
+    // ---- incidents ---------------------------------------------------------
+
+    match /incidents/{incidentId} {
+      // Any signed-in user can browse reports.
+      allow read: if isSignedIn();
+
+      // A user may only report as themselves, and a new report must start as
+      // "Submitted".
+      allow create: if isVerified()
+        && request.resource.data.reportedByUid == request.auth.uid
+        && request.resource.data.status == 'Submitted'
+        && request.resource.data.id == incidentId;
+
+      // Only staff may move a report, and only the status fields may change.
+      allow update: if isStaff()
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'updatedAt', 'statusHistory'])
+        && request.resource.data.status in ['Submitted', 'In Progress', 'Resolved'];
+
+      // A student may withdraw their own report while it is still Submitted.
+      allow delete: if isVerified()
+        && resource.data.reportedByUid == request.auth.uid
+        && resource.data.status == 'Submitted';
+    }
+  }
+}
