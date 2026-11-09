@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../providers/auth_provider.dart';
 import '../report_form/report_form_screen.dart';
 import '../profile/profile_screen.dart';
 import '../reports/reports_screen.dart';
@@ -24,6 +26,9 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _openReportForm() {
+    // Staff review and resolve reports; they cannot create new ones.
+    if (context.read<AuthProvider>().isStaff) return;
+
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (BuildContext context) => const ReportFormScreen(),
@@ -33,6 +38,10 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isStaff = context.select<AuthProvider, bool>(
+      (AuthProvider auth) => auth.isStaff,
+    );
+
     return Scaffold(
       backgroundColor: AppColors.page,
       body: IndexedStack(
@@ -51,6 +60,7 @@ class _MainShellState extends State<MainShell> {
         currentIndex: _tabIndex,
         onDestinationSelected: _selectTab,
         onAddPressed: _openReportForm,
+        showAddButton: !isStaff,
       ),
     );
   }

@@ -8,7 +8,7 @@
 | Resource | Link |
 |---|---|
 | GitHub repository | https://github.com/elkuradusenge/incident-report-app |
-| Demo video | [https://github.com/elkuradusenge/incident-report-app/blob/develop/video/](video/demo.mp4) |
+| Demo video | [https://github.com/elkuradusenge/incident-report-app/blob/develop/video/](video/demo.mkv) |
 
 ---
 

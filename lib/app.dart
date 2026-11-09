@@ -7,8 +7,8 @@ import 'providers/auth_provider.dart';
 import 'providers/incident_provider.dart';
 import 'screens/auth/auth_gate.dart';
 
-class CampusIncidentApp extends StatelessWidget {
-  const CampusIncidentApp({super.key});
+class ReportyApp extends StatelessWidget {
+  const ReportyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +23,7 @@ class CampusIncidentApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp(
-        title: 'Campus Incident Reporting',
+        title: 'Reporty',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
         // Keeps the app at phone width and centres it on wide (web) screens.

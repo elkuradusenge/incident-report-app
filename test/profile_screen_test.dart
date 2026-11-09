@@ -24,10 +24,17 @@ void main() {
   void configure({UserRole role = UserRole.student}) {
     service = FakeIncidentService();
     storage = FakeStorageService();
-    incidents = IncidentProvider(incidentService: service, storageService: storage);
+    incidents = IncidentProvider(
+      incidentService: service,
+      storageService: storage,
+    );
     authService = FakeAuthService();
     auth = FakeAuthProvider(
-      user: makeUser(role: role, department: 'Computer Science', location: 'Hostel A'),
+      user: makeUser(
+        role: role,
+        department: 'Computer Science',
+        location: 'Hostel A',
+      ),
       authService: authService,
     );
     incidents.updateUser(auth.currentUser);
@@ -68,13 +75,29 @@ void main() {
   }
 
   List<Incident> sampleMine() => <Incident>[
-        makeIncident(id: 'a', title: 'Leaking tap', status: IncidentStatus.submitted, day: 4),
-        makeIncident(id: 'b', title: 'Broken projector', status: IncidentStatus.inProgress, day: 3),
-        makeIncident(id: 'c', title: 'Flickering light', status: IncidentStatus.resolved, day: 2),
-      ];
+    makeIncident(
+      id: 'a',
+      title: 'Leaking tap',
+      status: IncidentStatus.submitted,
+      day: 4,
+    ),
+    makeIncident(
+      id: 'b',
+      title: 'Broken projector',
+      status: IncidentStatus.inProgress,
+      day: 3,
+    ),
+    makeIncident(
+      id: 'c',
+      title: 'Flickering light',
+      status: IncidentStatus.resolved,
+      day: 2,
+    ),
+  ];
 
-  testWidgets('shows the profile card, role chip and stat tiles',
-      (WidgetTester tester) async {
+  testWidgets('shows the profile card, role chip and stat tiles', (
+    WidgetTester tester,
+  ) async {
     configure();
     await pumpProfile(tester, mine: sampleMine());
 
@@ -94,11 +117,15 @@ void main() {
     expect(find.text('Total Reports'), findsOneWidget);
   });
 
-  testWidgets('marks staff accounts and hides empty profile fields',
-      (WidgetTester tester) async {
+  testWidgets('marks staff accounts and hides empty profile fields', (
+    WidgetTester tester,
+  ) async {
     service = FakeIncidentService();
     storage = FakeStorageService();
-    incidents = IncidentProvider(incidentService: service, storageService: storage);
+    incidents = IncidentProvider(
+      incidentService: service,
+      storageService: storage,
+    );
     authService = FakeAuthService();
     auth = FakeAuthProvider(
       user: makeUser(
@@ -118,6 +145,13 @@ void main() {
     // No department or location stored, so neither line is rendered.
     expect(find.byIcon(Icons.menu_book_outlined), findsNothing);
     expect(find.byIcon(Icons.location_on_outlined), findsNothing);
+
+    // Staff only see their profile, not the "My Reports" section.
+    expect(find.text('Profile'), findsOneWidget);
+    expect(find.text('My Reports'), findsNothing);
+    expect(find.byType(SummaryTile), findsNothing);
+    expect(find.byType(FilterChipRow<IncidentStatus>), findsNothing);
+    expect(find.byType(IncidentCard), findsNothing);
   });
 
   testWidgets('status chips filter my reports', (WidgetTester tester) async {
@@ -128,13 +162,17 @@ void main() {
 
     final Finder statusRow = find.byType(FilterChipRow<IncidentStatus>);
 
-    await tester.tap(find.descendant(of: statusRow, matching: find.text('In Progress')));
+    await tester.tap(
+      find.descendant(of: statusRow, matching: find.text('In Progress')),
+    );
     await tester.pump();
 
     expect(find.byType(IncidentCard), findsOneWidget);
     expect(find.text('Broken projector'), findsOneWidget);
 
-    await tester.tap(find.descendant(of: statusRow, matching: find.text('All')));
+    await tester.tap(
+      find.descendant(of: statusRow, matching: find.text('All')),
+    );
     await tester.pump();
     expect(find.byType(IncidentCard), findsNWidgets(3));
 
@@ -155,8 +193,9 @@ void main() {
     expect(find.text('You have not reported anything yet'), findsOneWidget);
   });
 
-  testWidgets('logout asks for confirmation before signing out',
-      (WidgetTester tester) async {
+  testWidgets('logout asks for confirmation before signing out', (
+    WidgetTester tester,
+  ) async {
     configure();
     await pumpProfile(tester, mine: <Incident>[]);
 

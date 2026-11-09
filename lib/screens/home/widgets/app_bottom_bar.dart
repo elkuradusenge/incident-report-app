@@ -3,19 +3,22 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/theme/app_theme.dart';
 
-/// Bottom navigation with Home, Reports, a raised centre "+" and Profile.
+/// Bottom navigation with Home, Reports, an optional raised centre "+" and
+/// Profile. Staff accounts never see the "+" because they cannot report issues.
 class AppBottomBar extends StatelessWidget {
   const AppBottomBar({
     super.key,
     required this.currentIndex,
     required this.onDestinationSelected,
     required this.onAddPressed,
+    this.showAddButton = true,
   });
 
   /// 0 = Home, 1 = Reports, 2 = Profile.
   final int currentIndex;
   final ValueChanged<int> onDestinationSelected;
   final VoidCallback onAddPressed;
+  final bool showAddButton;
 
   /// How far the round button rises above the bar.
   static const double _lift = 16;
@@ -25,7 +28,7 @@ class AppBottomBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: SizedBox(
-        height: AppSizes.bottomBarHeight + _lift,
+        height: AppSizes.bottomBarHeight + (showAddButton ? _lift : 0),
         child: Stack(
           alignment: Alignment.bottomCenter,
           children: <Widget>[
@@ -35,7 +38,11 @@ class AppBottomBar extends StatelessWidget {
                 color: AppColors.card,
                 border: Border(top: BorderSide(color: AppColors.border)),
                 boxShadow: <BoxShadow>[
-                  BoxShadow(color: Color(0x0F1B1B2F), blurRadius: 16, offset: Offset(0, -4)),
+                  BoxShadow(
+                    color: Color(0x0F1B1B2F),
+                    blurRadius: 16,
+                    offset: Offset(0, -4),
+                  ),
                 ],
               ),
             ),
@@ -65,7 +72,7 @@ class AppBottomBar extends StatelessWidget {
                     ),
                   ),
                   // Keeps the four slots equal; the round button floats here.
-                  const Expanded(child: SizedBox.shrink()),
+                  if (showAddButton) const Expanded(child: SizedBox.shrink()),
                   Expanded(
                     child: _BarItem(
                       icon: Icons.person_outline_rounded,
@@ -78,10 +85,14 @@ class AppBottomBar extends StatelessWidget {
                 ],
               ),
             ),
-            Positioned(
-              top: 0,
-              child: _AddButton(size: AppSizes.addButtonSize, onPressed: onAddPressed),
-            ),
+            if (showAddButton)
+              Positioned(
+                top: 0,
+                child: _AddButton(
+                  size: AppSizes.addButtonSize,
+                  onPressed: onAddPressed,
+                ),
+              ),
           ],
         ),
       ),

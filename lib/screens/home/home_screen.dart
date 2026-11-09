@@ -41,12 +41,17 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppUser? user = context.watch<AuthProvider>().currentUser;
     final IncidentProvider incidents = context.watch<IncidentProvider>();
-    final bool isStaff = context.select<AuthProvider, bool>((AuthProvider auth) => auth.isStaff);
+    final bool isStaff = context.select<AuthProvider, bool>(
+      (AuthProvider auth) => auth.isStaff,
+    );
 
     // Staff see the newest reports from everyone; students see their own.
-    final List<Incident> source =
-        isStaff ? incidents.allIncidents : incidents.myIncidents;
-    final List<Incident> recent = source.take(_recentCount).toList(growable: false);
+    final List<Incident> source = isStaff
+        ? incidents.allIncidents
+        : incidents.myIncidents;
+    final List<Incident> recent = source
+        .take(_recentCount)
+        .toList(growable: false);
 
     return Scaffold(
       backgroundColor: AppColors.page,
@@ -62,18 +67,32 @@ class HomeScreen extends StatelessWidget {
           children: <Widget>[
             _GreetingRow(user: user),
             const SizedBox(height: 10),
-            Text('Help make our campus safer.', style: AppTextStyles.cardTitle),
+            Text(
+              isStaff
+                  ? 'Keep our campus running smoothly.'
+                  : 'Help make our campus safer.',
+              style: AppTextStyles.cardTitle,
+            ),
             const SizedBox(height: 4),
             Text(
-              'Report issues and track their resolution.',
-              style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+              isStaff
+                  ? 'Review reports and keep the campus queue moving.'
+                  : 'Report issues and track their resolution.',
+              style: AppTextStyles.body.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
             const SizedBox(height: 18),
-            HomeHeroCard(onReportPressed: onReportPressed),
-            const SizedBox(height: 22),
-            SectionHeader(title: 'Report Summary', onSeeAll: onOpenProfile),
+            if (!isStaff) ...<Widget>[
+              HomeHeroCard(onReportPressed: onReportPressed),
+              const SizedBox(height: 22),
+            ],
+            SectionHeader(
+              title: 'Report Summary',
+              onSeeAll: isStaff ? onOpenReports : onOpenProfile,
+            ),
             const SizedBox(height: 12),
-            _SummaryRow(incidents: incidents),
+            _SummaryRow(incidents: incidents, isStaff: isStaff),
             const SizedBox(height: 22),
             SectionHeader(title: 'Recent Reports', onSeeAll: onOpenReports),
             const SizedBox(height: 12),
@@ -124,20 +143,36 @@ class _GreetingRow extends StatelessWidget {
 }
 
 class _SummaryRow extends StatelessWidget {
-  const _SummaryRow({required this.incidents});
+  const _SummaryRow({required this.incidents, required this.isStaff});
 
   final IncidentProvider incidents;
+  final bool isStaff;
 
   @override
   Widget build(BuildContext context) {
+    // Staff manage the whole queue, so their summary counts every report.
+    // Students see their own reports only.
+    final int total = isStaff
+        ? incidents.allReportCount
+        : incidents.myReportCount;
+    final int inProgress = isStaff
+        ? incidents.allInProgressCount
+        : incidents.myInProgressCount;
+    final int resolved = isStaff
+        ? incidents.allResolvedCount
+        : incidents.myResolvedCount;
+    final int submitted = isStaff
+        ? incidents.allSubmittedCount
+        : incidents.mySubmittedCount;
+
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Expanded(
             child: SummaryTile(
-              label: 'My Reports',
-              count: incidents.myReportCount,
+              label: isStaff ? 'Total Reports' : 'My Reports',
+              count: total,
               icon: Icons.description_outlined,
               backgroundColor: AppColors.myReportsTile,
               iconColor: AppColors.myReportsIcon,
@@ -147,7 +182,7 @@ class _SummaryRow extends StatelessWidget {
           Expanded(
             child: SummaryTile(
               label: 'In Progress',
-              count: incidents.myInProgressCount,
+              count: inProgress,
               icon: Icons.hourglass_bottom_rounded,
               backgroundColor: AppColors.inProgressTile,
               iconColor: AppColors.inProgressIcon,
@@ -157,7 +192,7 @@ class _SummaryRow extends StatelessWidget {
           Expanded(
             child: SummaryTile(
               label: 'Resolved',
-              count: incidents.myResolvedCount,
+              count: resolved,
               icon: Icons.check_circle_outline_rounded,
               backgroundColor: AppColors.resolvedTile,
               iconColor: AppColors.resolvedIcon,
@@ -167,7 +202,7 @@ class _SummaryRow extends StatelessWidget {
           Expanded(
             child: SummaryTile(
               label: 'Submitted',
-              count: incidents.mySubmittedCount,
+              count: submitted,
               icon: Icons.send_outlined,
               backgroundColor: AppColors.submittedTile,
               iconColor: AppColors.submittedIcon,
@@ -193,7 +228,10 @@ class _RecentReports extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (incidents.isLoading) {
-      return const SizedBox(height: 160, child: LoadingView(message: 'Loading reports…'));
+      return const SizedBox(
+        height: 160,
+        child: LoadingView(message: 'Loading reports…'),
+      );
     }
 
     final String? error = incidents.errorMessage;
@@ -233,5 +271,3 @@ class _RecentReports extends StatelessWidget {
     );
   }
 }
-
-

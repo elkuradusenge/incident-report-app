@@ -70,7 +70,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 const AuthHeader(
-                  title: 'Campus Incident Reporting',
+                  title: 'Reporty',
                   subtitle: 'Create your student account with your ALU email.',
                 ),
                 const SizedBox(height: 28),

@@ -23,7 +23,10 @@ void main() {
   setUp(() {
     service = FakeIncidentService();
     storage = FakeStorageService();
-    incidents = IncidentProvider(incidentService: service, storageService: storage);
+    incidents = IncidentProvider(
+      incidentService: service,
+      storageService: storage,
+    );
   });
 
   tearDown(() async {
@@ -64,14 +67,18 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('renders greeting, subtitle, hero and four tiles at 360 wide',
-      (WidgetTester tester) async {
+  testWidgets('renders greeting, subtitle, hero and four tiles at 360 wide', (
+    WidgetTester tester,
+  ) async {
     await pumpShell(tester, user: makeUser(), size: const Size(360, 800));
 
     expect(tester.takeException(), isNull);
     expect(find.text('Hello, Elijah 👋'), findsOneWidget);
     expect(find.text('Help make our campus safer.'), findsOneWidget);
-    expect(find.text('Report issues and track their resolution.'), findsOneWidget);
+    expect(
+      find.text('Report issues and track their resolution.'),
+      findsOneWidget,
+    );
     expect(find.text('See an issue on campus?'), findsOneWidget);
     expect(find.text('Report an Issue'), findsOneWidget);
     expect(find.byType(SummaryTile), findsNWidgets(4));
@@ -82,8 +89,9 @@ void main() {
     expect(find.byIcon(Icons.notifications_none), findsNothing);
   });
 
-  testWidgets('shows the three most recent of my reports for a student',
-      (WidgetTester tester) async {
+  testWidgets('shows the three most recent of my reports for a student', (
+    WidgetTester tester,
+  ) async {
     await pumpShell(
       tester,
       user: makeUser(),
@@ -95,8 +103,18 @@ void main() {
         makeIncident(id: 'e', title: 'Mine fourth', day: 1),
       ],
       mine: <Incident>[
-        makeIncident(id: 'a', title: 'Mine newest', status: IncidentStatus.resolved, day: 5),
-        makeIncident(id: 'c', title: 'Mine second', status: IncidentStatus.inProgress, day: 3),
+        makeIncident(
+          id: 'a',
+          title: 'Mine newest',
+          status: IncidentStatus.resolved,
+          day: 5,
+        ),
+        makeIncident(
+          id: 'c',
+          title: 'Mine second',
+          status: IncidentStatus.inProgress,
+          day: 3,
+        ),
         makeIncident(id: 'd', title: 'Mine third', day: 2),
         makeIncident(id: 'e', title: 'Mine fourth', day: 1),
       ],
@@ -115,32 +133,75 @@ void main() {
     expect(tester.widget<SummaryTile>(tiles.at(3)).count, 2); // Submitted
   });
 
-  testWidgets('staff see the newest reports from everyone', (WidgetTester tester) async {
+  testWidgets('staff see the newest reports from everyone', (
+    WidgetTester tester,
+  ) async {
     await pumpShell(
       tester,
       user: makeUser(role: UserRole.staff),
       all: <Incident>[
-        makeIncident(id: 'a', owner: 'uid-7', title: 'From a student', day: 5),
-        makeIncident(id: 'b', owner: 'uid-8', title: 'From another', day: 4),
-        makeIncident(id: 'c', owner: 'uid-9', title: 'Third one', day: 3),
-        makeIncident(id: 'd', owner: 'uid-9', title: 'Fourth one', day: 2),
+        makeIncident(
+          id: 'a',
+          owner: 'uid-7',
+          title: 'From a student',
+          status: IncidentStatus.submitted,
+          day: 5,
+        ),
+        makeIncident(
+          id: 'b',
+          owner: 'uid-8',
+          title: 'From another',
+          status: IncidentStatus.inProgress,
+          day: 4,
+        ),
+        makeIncident(
+          id: 'c',
+          owner: 'uid-9',
+          title: 'Third one',
+          status: IncidentStatus.resolved,
+          day: 3,
+        ),
+        makeIncident(
+          id: 'd',
+          owner: 'uid-9',
+          title: 'Fourth one',
+          status: IncidentStatus.resolved,
+          day: 2,
+        ),
       ],
     );
 
     expect(find.byType(IncidentCard), findsNWidgets(3));
     expect(find.text('From a student'), findsOneWidget);
     expect(find.text('Fourth one'), findsNothing);
+
+    // Staff summary counts the whole queue, not just their own reports.
+    expect(find.text('Total Reports'), findsOneWidget);
+    final Finder tiles = find.byType(SummaryTile);
+    expect(tester.widget<SummaryTile>(tiles.at(0)).count, 4); // Total Reports
+    expect(tester.widget<SummaryTile>(tiles.at(1)).count, 1); // In Progress
+    expect(tester.widget<SummaryTile>(tiles.at(2)).count, 2); // Resolved
+    expect(tester.widget<SummaryTile>(tiles.at(3)).count, 1); // Submitted
+
+    // Staff review reports only: no report-creation UI anywhere.
+    expect(find.text('Keep our campus running smoothly.'), findsOneWidget);
+    expect(find.text('See an issue on campus?'), findsNothing);
+    expect(find.text('Report an Issue'), findsNothing);
+    expect(find.byIcon(Icons.add_rounded), findsNothing);
   });
 
-  testWidgets('shows the empty state when nothing has been reported',
-      (WidgetTester tester) async {
+  testWidgets('shows the empty state when nothing has been reported', (
+    WidgetTester tester,
+  ) async {
     await pumpShell(tester, user: makeUser());
 
     expect(find.byType(IncidentCard), findsNothing);
     expect(find.text('You have not reported anything yet'), findsOneWidget);
   });
 
-  testWidgets('bottom bar switches between the tabs', (WidgetTester tester) async {
+  testWidgets('bottom bar switches between the tabs', (
+    WidgetTester tester,
+  ) async {
     await pumpShell(tester, user: makeUser(), size: const Size(390, 900));
 
     expect(tester.widget<IndexedStack>(find.byType(IndexedStack)).index, 0);
@@ -158,8 +219,9 @@ void main() {
     expect(tester.widget<IndexedStack>(find.byType(IndexedStack)).index, 0);
   });
 
-  testWidgets('the raised + button is wired to the report form',
-      (WidgetTester tester) async {
+  testWidgets('the raised + button is wired to the report form', (
+    WidgetTester tester,
+  ) async {
     await pumpShell(tester, user: makeUser(), size: const Size(390, 900));
 
     await tester.tap(
@@ -174,8 +236,9 @@ void main() {
     expect(find.byType(ReportFormScreen), findsOneWidget);
   });
 
-  testWidgets('the hero button is wired to the report form',
-      (WidgetTester tester) async {
+  testWidgets('the hero button is wired to the report form', (
+    WidgetTester tester,
+  ) async {
     await pumpShell(tester, user: makeUser(), size: const Size(390, 900));
 
     await tester.tap(find.text('Report an Issue'));

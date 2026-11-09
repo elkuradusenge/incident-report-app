@@ -46,3 +46,11 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Local build-time configuration (Cloudinary cloud name / unsigned preset)
+/dart_defines.json
+
+# Firebase Admin service account keys used by tool/seed_demo_accounts.mjs
+/tool/serviceAccountKey.json
+/tool/node_modules/
+**/firebase-adminsdk*.json
