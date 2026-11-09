@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/constants/app_sizes.dart';
+import '../../core/constants/demo_accounts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/auth_validators.dart';
 import '../../core/widgets/app_text_field.dart';
@@ -37,16 +38,33 @@ class _LoginScreenState extends State<LoginScreen> {
     // AuthGate reacts to the new session: the app if verified, otherwise the
     // verification screen.
     await context.read<AuthProvider>().signIn(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-        );
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+    );
   }
 
   void _openRegister() {
     context.read<AuthProvider>().clearError();
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (BuildContext context) => const RegisterScreen()),
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => const RegisterScreen(),
+      ),
     );
+  }
+
+  void _useDemoAccount(DemoAccount account) {
+    context.read<AuthProvider>().clearError();
+    _emailController.text = account.email;
+    _passwordController.text = account.password;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            '${account.label} demo credentials filled. Tap Sign in.',
+          ),
+        ),
+      );
   }
 
   @override
@@ -69,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   const AuthHeader(
-                    title: 'Campus Incident Reporting',
+                    title: 'Reporty',
                     subtitle: 'Sign in to report and track campus incidents.',
                   ),
                   const SizedBox(height: 32),
@@ -115,17 +133,135 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: auth.isSubmitting ? null : _openRegister,
                         style: TextButton.styleFrom(
                           foregroundColor: AppColors.primary,
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 4,
+                          ),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
-                        child: Text('Create an account', style: AppTextStyles.link),
+                        child: Text(
+                          'Create an account',
+                          style: AppTextStyles.link,
+                        ),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 24),
+                  _DemoAccountsCard(onSelect: _useDemoAccount),
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DemoAccountsCard extends StatelessWidget {
+  const _DemoAccountsCard({required this.onSelect});
+
+  final ValueChanged<DemoAccount> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.shell,
+        borderRadius: BorderRadius.circular(AppSizes.cardRadius),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const Icon(
+                Icons.vpn_key_outlined,
+                size: 16,
+                color: AppColors.primary,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Demo accounts',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.inputLabel,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Tap an account to fill the form.',
+            style: AppTextStyles.caption,
+          ),
+          const SizedBox(height: 10),
+          for (final DemoAccount account in DemoAccounts.all)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _DemoAccountRow(
+                account: account,
+                onTap: () => onSelect(account),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DemoAccountRow extends StatelessWidget {
+  const _DemoAccountRow({required this.account, required this.onTap});
+
+  final DemoAccount account;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.card,
+      borderRadius: BorderRadius.circular(AppSizes.inputRadius),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppSizes.inputRadius),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            children: <Widget>[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.filterChip,
+                  borderRadius: BorderRadius.circular(AppSizes.chipRadius),
+                ),
+                child: Text(account.label, style: AppTextStyles.chip),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      account.email,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.body,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(account.password, style: AppTextStyles.caption),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.north_east_rounded,
+                size: 16,
+                color: AppColors.textHint,
+              ),
+            ],
           ),
         ),
       ),

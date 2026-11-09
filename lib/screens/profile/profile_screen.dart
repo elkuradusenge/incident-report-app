@@ -30,11 +30,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   IncidentStatus? _statusFilter;
 
   Future<void> _confirmSignOut() async {
+    final bool isStaff = context.read<AuthProvider>().isStaff;
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) => AlertDialog(
         title: const Text('Sign out?'),
-        content: const Text('You will need to sign in again to report an issue.'),
+        content: Text(
+          isStaff
+              ? 'You will need to sign in again to review reports.'
+              : 'You will need to sign in again to report an issue.',
+        ),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -59,7 +64,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final String? error = auth.errorMessage;
     if (error != null) {
-      messenger.showSnackBar(SnackBar(content: Text(error), backgroundColor: AppColors.error));
+      messenger.showSnackBar(
+        SnackBar(content: Text(error), backgroundColor: AppColors.error),
+      );
       auth.clearError();
     }
   }
@@ -77,11 +84,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final AppUser? user = context.watch<AuthProvider>().currentUser;
     final IncidentProvider incidents = context.watch<IncidentProvider>();
     final List<Incident> reports = _visibleReports(incidents);
+    final bool isStaff = user?.role == UserRole.staff;
 
     return Scaffold(
       backgroundColor: AppColors.page,
       appBar: AppBar(
-        title: const Text('My Reports'),
+        title: Text(isStaff ? 'Profile' : 'My Reports'),
         actions: <Widget>[
           IconButton(
             onPressed: _confirmSignOut,
@@ -101,50 +109,58 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           children: <Widget>[
             _ProfileCard(user: user),
-            const SizedBox(height: 18),
-            _StatsRow(incidents: incidents),
-            const SizedBox(height: 18),
-            FilterChipRow<IncidentStatus>(
-              options: IncidentStatus.values,
-              labelOf: (IncidentStatus status) => status.label,
-              selected: _statusFilter,
-              onSelected: (IncidentStatus? status) =>
-                  setState(() => _statusFilter = status),
-              padding: EdgeInsets.zero,
-            ),
-            const SizedBox(height: 14),
-            if (incidents.isLoadingMyReports)
-              const SizedBox(height: 160, child: LoadingView(message: 'Loading your reports…'))
-            else if (incidents.errorMessage != null && reports.isEmpty)
-              SizedBox(
-                height: 260,
-                child: ErrorView(
-                  message: incidents.errorMessage!,
-                  onRetry: incidents.refresh,
-                ),
-              )
-            else if (reports.isEmpty)
-              EmptyView(
-                title: _statusFilter == null
-                    ? 'You have not reported anything yet'
-                    : 'No reports found',
-                message: _statusFilter == null
-                    ? 'Reports you submit will appear here.'
-                    : 'Try a different status filter.',
-              )
-            else
-              for (int i = 0; i < reports.length; i++) ...<Widget>[
-                if (i > 0) const SizedBox(height: 12),
-                IncidentCard(
-                  title: reports[i].title,
-                  location: reports[i].location,
-                  time: reports[i].createdAt,
-                  status: reports[i].status,
-                  imageUrl: reports[i].photoUrl,
-                  thumbnailIcon: reports[i].category.icon,
-                  onTap: () => IncidentDetailsScreen.open(context, reports[i].id),
-                ),
-              ],
+            // Staff only view their profile here; the report queue lives on
+            // the Reports tab.
+            if (!isStaff) ...<Widget>[
+              const SizedBox(height: 18),
+              _StatsRow(incidents: incidents),
+              const SizedBox(height: 18),
+              FilterChipRow<IncidentStatus>(
+                options: IncidentStatus.values,
+                labelOf: (IncidentStatus status) => status.label,
+                selected: _statusFilter,
+                onSelected: (IncidentStatus? status) =>
+                    setState(() => _statusFilter = status),
+                padding: EdgeInsets.zero,
+              ),
+              const SizedBox(height: 14),
+              if (incidents.isLoadingMyReports)
+                const SizedBox(
+                  height: 160,
+                  child: LoadingView(message: 'Loading your reports…'),
+                )
+              else if (incidents.errorMessage != null && reports.isEmpty)
+                SizedBox(
+                  height: 260,
+                  child: ErrorView(
+                    message: incidents.errorMessage!,
+                    onRetry: incidents.refresh,
+                  ),
+                )
+              else if (reports.isEmpty)
+                EmptyView(
+                  title: _statusFilter == null
+                      ? 'You have not reported anything yet'
+                      : 'No reports found',
+                  message: _statusFilter == null
+                      ? 'Reports you submit will appear here.'
+                      : 'Try a different status filter.',
+                )
+              else
+                for (int i = 0; i < reports.length; i++) ...<Widget>[
+                  if (i > 0) const SizedBox(height: 12),
+                  IncidentCard(
+                    title: reports[i].title,
+                    location: reports[i].location,
+                    time: reports[i].createdAt,
+                    status: reports[i].status,
+                    imageUrl: reports[i].photoUrl,
+                    thumbnailIcon: reports[i].category.icon,
+                    onTap: () =>
+                        IncidentDetailsScreen.open(context, reports[i].id),
+                  ),
+                ],
+            ],
           ],
         ),
       ),
@@ -200,7 +216,8 @@ class _ProfileCard extends StatelessWidget {
             const SizedBox(height: 12),
             if (department.isNotEmpty)
               IconTextRow(icon: Icons.menu_book_outlined, text: department),
-            if (department.isNotEmpty && location.isNotEmpty) const SizedBox(height: 8),
+            if (department.isNotEmpty && location.isNotEmpty)
+              const SizedBox(height: 8),
             if (location.isNotEmpty)
               IconTextRow(icon: Icons.location_on_outlined, text: location),
           ],

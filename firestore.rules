@@ -55,9 +55,10 @@ service cloud.firestore {
       // Any signed-in user can browse reports.
       allow read: if isSignedIn();
 
-      // A user may only report as themselves, and a new report must start as
-      // "Submitted".
+      // Only students may report, only as themselves, and a new report must
+      // start as "Submitted". Staff review the queue; they do not file reports.
       allow create: if isVerified()
+        && !isStaff()
         && request.resource.data.reportedByUid == request.auth.uid
         && request.resource.data.status == 'Submitted'
         && request.resource.data.id == incidentId;
@@ -69,7 +70,9 @@ service cloud.firestore {
         && request.resource.data.status in ['Submitted', 'In Progress', 'Resolved'];
 
       // A student may withdraw their own report while it is still Submitted.
+      // Staff never delete; they only update the status.
       allow delete: if isVerified()
+        && !isStaff()
         && resource.data.reportedByUid == request.auth.uid
         && resource.data.status == 'Submitted';
     }

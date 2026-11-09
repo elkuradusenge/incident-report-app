@@ -16,7 +16,10 @@ void main() {
   setUp(() {
     service = FakeIncidentService();
     storage = FakeStorageService();
-    provider = IncidentProvider(incidentService: service, storageService: storage);
+    provider = IncidentProvider(
+      incidentService: service,
+      storageService: storage,
+    );
     addTearDown(() async {
       provider.dispose();
       await service.dispose();
@@ -35,7 +38,10 @@ void main() {
       service.mine.add(<Incident>[makeIncident(id: 'a', day: 3)]);
       await pumpEventQueue();
 
-      expect(provider.allIncidents.map((Incident i) => i.id), <String>['a', 'b']);
+      expect(provider.allIncidents.map((Incident i) => i.id), <String>[
+        'a',
+        'b',
+      ]);
       expect(provider.myIncidents, hasLength(1));
       expect(provider.isLoading, isFalse);
     });
@@ -102,7 +108,10 @@ void main() {
       expect(provider.filteredIncidents.single.id, 'b');
 
       provider.setSearchQuery('hostel');
-      expect(provider.filteredIncidents.map((Incident i) => i.id), <String>['a', 'c']);
+      expect(provider.filteredIncidents.map((Incident i) => i.id), <String>[
+        'a',
+        'c',
+      ]);
 
       provider.setSearchQuery('Electricity');
       expect(provider.filteredIncidents.single.id, 'c');
@@ -119,7 +128,6 @@ void main() {
       provider.setCategoryFilter(IncidentCategory.facilities);
       expect(provider.filteredIncidents.single.id, 'b');
     });
-
   });
 
   group('counters', () {
@@ -132,7 +140,11 @@ void main() {
         makeIncident(id: 'b', status: IncidentStatus.submitted),
         makeIncident(id: 'c', status: IncidentStatus.inProgress),
         makeIncident(id: 'd', status: IncidentStatus.resolved),
-        makeIncident(id: 'e', owner: 'someone-else', status: IncidentStatus.resolved),
+        makeIncident(
+          id: 'e',
+          owner: 'someone-else',
+          status: IncidentStatus.resolved,
+        ),
       ]);
       await pumpEventQueue();
 
@@ -140,6 +152,28 @@ void main() {
       expect(provider.mySubmittedCount, 2);
       expect(provider.myInProgressCount, 1);
       expect(provider.myResolvedCount, 2);
+    });
+
+    test('count every report in the queue for staff', () async {
+      provider.updateUser(makeUser(role: UserRole.staff));
+      await pumpEventQueue();
+
+      service.all.add(<Incident>[
+        makeIncident(id: 'a', owner: 'uid-1', status: IncidentStatus.submitted),
+        makeIncident(
+          id: 'b',
+          owner: 'uid-2',
+          status: IncidentStatus.inProgress,
+        ),
+        makeIncident(id: 'c', owner: 'uid-3', status: IncidentStatus.resolved),
+        makeIncident(id: 'd', owner: 'uid-4', status: IncidentStatus.resolved),
+      ]);
+      await pumpEventQueue();
+
+      expect(provider.allReportCount, 4);
+      expect(provider.allSubmittedCount, 1);
+      expect(provider.allInProgressCount, 1);
+      expect(provider.allResolvedCount, 2);
     });
   });
 
@@ -192,6 +226,22 @@ void main() {
       expect(created!.photoUrl, isNull);
     });
 
+    test('is refused for staff', () async {
+      provider.updateUser(makeUser(role: UserRole.staff));
+      await pumpEventQueue();
+
+      final Incident? created = await provider.submitIncident(
+        title: 'Broken chair',
+        description: 'Leg snapped',
+        category: IncidentCategory.facilities,
+        location: 'Block C',
+      );
+
+      expect(created, isNull);
+      expect(service.createCount, 0);
+      expect(provider.errorMessage, contains('Staff accounts'));
+    });
+
     test('reports a failed write', () async {
       provider.updateUser(makeUser());
       await pumpEventQueue();
@@ -215,7 +265,10 @@ void main() {
       provider.updateUser(makeUser());
       await pumpEventQueue();
 
-      final bool updated = await provider.updateStatus('a', IncidentStatus.resolved);
+      final bool updated = await provider.updateStatus(
+        'a',
+        IncidentStatus.resolved,
+      );
 
       expect(updated, isFalse);
       expect(service.updatedStatus, isNull);
@@ -226,7 +279,10 @@ void main() {
       provider.updateUser(makeUser(role: UserRole.staff));
       await pumpEventQueue();
 
-      final bool updated = await provider.updateStatus('a', IncidentStatus.resolved);
+      final bool updated = await provider.updateStatus(
+        'a',
+        IncidentStatus.resolved,
+      );
 
       expect(updated, isTrue);
       expect(service.updatedId, 'a');
@@ -240,7 +296,10 @@ void main() {
       await pumpEventQueue();
 
       final Incident mine = makeIncident(id: 'a');
-      final Incident mineInProgress = makeIncident(id: 'b', status: IncidentStatus.inProgress);
+      final Incident mineInProgress = makeIncident(
+        id: 'b',
+        status: IncidentStatus.inProgress,
+      );
       final Incident someoneElse = makeIncident(id: 'c', owner: 'uid-2');
 
       expect(provider.canDelete(mine), isTrue);
@@ -251,12 +310,24 @@ void main() {
       expect(service.deletedId, 'a');
     });
 
+    test('staff cannot delete any report', () async {
+      provider.updateUser(makeUser(role: UserRole.staff));
+      await pumpEventQueue();
+
+      final Incident own = makeIncident(id: 'a', owner: 'uid-1');
+
+      expect(provider.canDelete(own), isFalse);
+      expect(await provider.deleteIncident(own), isFalse);
+      expect(service.deletedId, isNull);
+    });
+
     test('refuses to delete a report that moved past Submitted', () async {
       provider.updateUser(makeUser());
       await pumpEventQueue();
 
-      final bool deleted =
-          await provider.deleteIncident(makeIncident(id: 'b', status: IncidentStatus.inProgress));
+      final bool deleted = await provider.deleteIncident(
+        makeIncident(id: 'b', status: IncidentStatus.inProgress),
+      );
 
       expect(deleted, isFalse);
       expect(service.deletedId, isNull);

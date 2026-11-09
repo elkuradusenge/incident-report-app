@@ -1,11 +1,11 @@
 {
-    "name": "campus_incident_app",
-    "short_name": "campus_incident_app",
+    "name": "Reporty",
+    "short_name": "Reporty",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Reporty - report and track campus incidents.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

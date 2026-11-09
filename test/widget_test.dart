@@ -15,7 +15,7 @@ Widget _shellHost() {
     builder: (BuildContext context, Widget? child) =>
         ResponsiveShell(child: child ?? const SizedBox.shrink()),
     home: const Scaffold(
-      body: Center(child: Text('Campus Incident Reporting')),
+      body: Center(child: Text('Reporty')),
     ),
   );
 }
@@ -39,7 +39,7 @@ void main() {
     await tester.pump();
 
     expect(find.byType(ResponsiveShell), findsOneWidget);
-    expect(find.text('Campus Incident Reporting'), findsOneWidget);
+    expect(find.text('Reporty'), findsOneWidget);
   });
 
   testWidgets('wide screens clamp the app column to 430', (WidgetTester tester) async {

@@ -8,7 +8,7 @@ import 'app_text_styles.dart';
 export 'app_colors.dart';
 export 'app_text_styles.dart';
 
-/// Global theme for the Campus Incident Reporting app.
+/// Global theme for the Reporty app.
 abstract final class AppTheme {
   /// Very soft card shadow: blur 16, 6% opacity.
   static const List<BoxShadow> cardShadow = <BoxShadow>[

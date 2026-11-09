@@ -14,9 +14,11 @@ import '../services/storage_service.dart';
 /// Screens never touch Firestore: they read this provider, which listens to the
 /// service streams, so every screen updates automatically on changes.
 class IncidentProvider extends ChangeNotifier {
-  IncidentProvider({IncidentService? incidentService, StorageService? storageService})
-      : _incidentService = incidentService ?? IncidentService(),
-        _storageService = storageService ?? StorageService();
+  IncidentProvider({
+    IncidentService? incidentService,
+    StorageService? storageService,
+  }) : _incidentService = incidentService ?? IncidentService(),
+       _storageService = storageService ?? StorageService();
 
   final IncidentService _incidentService;
   final StorageService _storageService;
@@ -64,28 +66,46 @@ class IncidentProvider extends ChangeNotifier {
   List<Incident> get filteredIncidents {
     final String query = _searchQuery.trim().toLowerCase();
 
-    return _allIncidents.where((Incident incident) {
-      if (_statusFilter != null && incident.status != _statusFilter) return false;
-      if (_categoryFilter != null && incident.category != _categoryFilter) return false;
-      if (query.isEmpty) return true;
+    return _allIncidents
+        .where((Incident incident) {
+          if (_statusFilter != null && incident.status != _statusFilter) {
+            return false;
+          }
+          if (_categoryFilter != null && incident.category != _categoryFilter) {
+            return false;
+          }
+          if (query.isEmpty) return true;
 
-      return incident.title.toLowerCase().contains(query) ||
-          incident.description.toLowerCase().contains(query) ||
-          incident.location.toLowerCase().contains(query) ||
-          incident.category.label.toLowerCase().contains(query) ||
-          incident.reportedByName.toLowerCase().contains(query);
-    }).toList(growable: false);
+          return incident.title.toLowerCase().contains(query) ||
+              incident.description.toLowerCase().contains(query) ||
+              incident.location.toLowerCase().contains(query) ||
+              incident.category.label.toLowerCase().contains(query) ||
+              incident.reportedByName.toLowerCase().contains(query);
+        })
+        .toList(growable: false);
   }
 
-  // Counters for the home summary tiles and profile stats (the signed-in user's
-  // own reports).
+  // Counters for the profile stats and the student home summary (the signed-in
+  // user's own reports).
   int get myReportCount => _myIncidents.length;
   int get mySubmittedCount => _countMine(IncidentStatus.submitted);
   int get myInProgressCount => _countMine(IncidentStatus.inProgress);
   int get myResolvedCount => _countMine(IncidentStatus.resolved);
 
-  int _countMine(IncidentStatus status) =>
-      _myIncidents.where((Incident incident) => incident.status == status).length;
+  int _countMine(IncidentStatus status) => _myIncidents
+      .where((Incident incident) => incident.status == status)
+      .length;
+
+  // Counters for the whole queue, used by staff on the home summary so reports
+  // resolved by staff for other people are included.
+  int get allReportCount => _allIncidents.length;
+  int get allSubmittedCount => _countAll(IncidentStatus.submitted);
+  int get allInProgressCount => _countAll(IncidentStatus.inProgress);
+  int get allResolvedCount => _countAll(IncidentStatus.resolved);
+
+  int _countAll(IncidentStatus status) => _allIncidents
+      .where((Incident incident) => incident.status == status)
+      .length;
 
   /// Re-points the streams at [user]. Called from the provider tree whenever the
   /// auth session changes.
@@ -99,7 +119,8 @@ class IncidentProvider extends ChangeNotifier {
 
   /// Live document for one report, so a details screen updates as staff change
   /// the status elsewhere.
-  Stream<Incident?> watchIncident(String id) => _incidentService.streamIncident(id);
+  Stream<Incident?> watchIncident(String id) =>
+      _incidentService.streamIncident(id);
 
   /// Re-opens the Firestore streams, e.g. after an error.
   void refresh() => _resubscribe();
@@ -131,18 +152,20 @@ class IncidentProvider extends ChangeNotifier {
         },
       );
 
-      _mySubscription = _incidentService.streamIncidentsByUser(uid).listen(
-        (List<Incident> incidents) {
-          _myIncidents = incidents;
-          _isLoadingMine = false;
-          _notify();
-        },
-        onError: (Object error) {
-          _isLoadingMine = false;
-          _errorMessage = dataErrorMessage(error);
-          _notify();
-        },
-      );
+      _mySubscription = _incidentService
+          .streamIncidentsByUser(uid)
+          .listen(
+            (List<Incident> incidents) {
+              _myIncidents = incidents;
+              _isLoadingMine = false;
+              _notify();
+            },
+            onError: (Object error) {
+              _isLoadingMine = false;
+              _errorMessage = dataErrorMessage(error);
+              _notify();
+            },
+          );
     }
 
     // updateUser() runs during a build, so notify after it finishes.
@@ -176,6 +199,11 @@ class IncidentProvider extends ChangeNotifier {
     required String location,
     XFile? photo,
   }) async {
+    if (isStaff) {
+      _errorMessage = 'Staff accounts review reports; they cannot submit them.';
+      _notify();
+      return null;
+    }
     final AppUser? user = _user;
     if (user == null) {
       _errorMessage = 'Please sign in again to submit a report.';
@@ -245,17 +273,20 @@ class IncidentProvider extends ChangeNotifier {
   }
 
   /// Students may only delete their own report while it is still `Submitted`.
+  /// Staff never delete reports; they only move them through the workflow.
   /// The Firestore rules enforce the same rule on the server.
   bool canDelete(Incident incident) {
     final AppUser? user = _user;
-    if (user == null) return false;
+    if (user == null || isStaff) return false;
 
-    return incident.reportedByUid == user.uid && incident.status == IncidentStatus.submitted;
+    return incident.reportedByUid == user.uid &&
+        incident.status == IncidentStatus.submitted;
   }
 
   Future<bool> deleteIncident(Incident incident) async {
     if (!canDelete(incident)) {
-      _errorMessage = 'You can only delete your own report while it is still submitted.';
+      _errorMessage =
+          'You can only delete your own report while it is still submitted.';
       _notify();
       return false;
     }
