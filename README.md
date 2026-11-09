@@ -1,62 +1,93 @@
-# Reporty: Campus Incident Reporting
+# Reporty (Campus Incident Reporting App)
 
-Reporty is a Flutter app for reporting and tracking campus incidents. Students
-report problems such as broken facilities, water leaks, power faults, safety
-risks and sanitation issues. Staff review those reports and move them through a
-simple lifecycle. Everyone signed in can follow the shared report feed, and the
-reporter can watch their own report change status in real time.
+Reporty is a Flutter mobile app where students report campus issues such as
+damaged facilities, water problems, electricity faults, safety risks and
+sanitation concerns. Authorized staff review the reports and update their status.
 
-The app runs on Android, iOS and the web from one codebase and uses Firebase for
-authentication, data storage and image uploads.
+Students can submit a report with a category, title, description, location and
+an optional photo. Every report starts as Submitted and moves through In Progress
+to Resolved. Signed-in users see live updates, and reporters can follow the
+timestamped status timeline for their own reports.
 
-- Full technical report: [REPORT.md](REPORT.md)
-- Demo video: [video/demo.mkv](video/demo.mkv)
+Full technical report: [REPORT.md](REPORT.md)
 
-## What the app does
+## Prerequisites
 
-- Restricts registration to ALU email addresses (`@alustudent.com` and
-  `@alueducation.com`).
-- Requires email verification before the app can be used.
-- Supports two roles: Student and Staff.
-- Lets students create reports with a category, title, description, campus
-  location and an optional photo.
-- Shows live report lists, summary counters, search and filters.
-- Lets staff change a report from Submitted to In Progress to Resolved, with a
-  timestamped status timeline.
-- Lets a student delete their own report while it is still Submitted.
+Make sure the following are installed and working before you start:
 
-## Run the app
+- **Git**, to clone the repository.
+- **Flutter SDK** with Dart SDK `^3.13.5`, installed and on your `PATH`. Verify
+  with `flutter --version`.
+- **Android Studio** (recommended) with an **Android emulator** configured, or a
+  physical Android device connected. Xcode and an iOS simulator can be used,
+  but the iOS Firebase options in this repository are placeholders until you run
+  `flutterfire configure`.
+- A running emulator or simulator, or a connected device.
 
-You need a Flutter SDK and a configured Firebase project. From the project
-root, run:
+## Getting started
 
-```bash
-flutter pub get
-flutter run
-```
+1. Clone the repository:
 
-To point photo uploads at a different Cloudinary account, copy
-`dart_defines.example.json`, edit the values, and run:
+   ```bash
+   git clone https://github.com/elkuradusenge/incident-report-app.git
+   ```
 
-```bash
-flutter run --dart-define-from-file=dart_defines.json
-```
+2. Move into the project directory:
 
-### Demo accounts
+   ```bash
+   cd incident-report-app
+   ```
 
-The login screen also has a Demo accounts card. Tap an account there to fill the
-email and password fields, then tap Sign in.
+3. Install the dependencies:
 
-| Role | Email | Password |
-|---|---|---|
-| Student | `e.kuradusen@alustudent.com` | `Student@123` |
-| Staff | `staff@alueducation.com` | `Staff@123` |
+   ```bash
+   flutter pub get
+   ```
 
-The accounts are seeded by `tool/seed_demo_accounts.mjs`.
+4. Start your Android emulator, or connect a physical Android device.
 
-## Navigate the app
+5. Run the app:
 
-### First launch and sign in
+   ```bash
+   flutter run
+   ```
+
+No local Firebase setup is required for Android. The repository already targets
+the Firebase project `incident-report-app-1d35b`, and the Android Firebase
+configuration is committed. For iOS or web, generate the missing platform
+options with `flutterfire configure` before running on those platforms.
+
+## Demo accounts
+
+The login screen has a Demo accounts card. Tap an account to fill the form, then
+tap Sign in. You can also type the credentials manually:
+
+- Staff: `staff@alueducation.com` / `Staff@123`
+- Student: `e.kuradusen@alustudent.com` / `Student@123`
+
+Both accounts are created by `tool/seed_demo_accounts.mjs`. Only ALU addresses
+are accepted: students use `@alustudent.com`, staff use `@alueducation.com`.
+Self registration always creates a Student account. Staff accounts are assigned
+by an administrator.
+
+## Features
+
+- Sign up and log in with email and password (Firebase Authentication).
+- Email verification before the app becomes available.
+- Students can submit reports with a category, title, description, location and
+  an optional photo uploaded to Cloudinary.
+- Students can browse the shared report feed, search and filter reports, view
+  their own reports and track a report's status timeline.
+- Students can delete their own report while it is still Submitted.
+- Staff can review all reports, search and filter by status and category, and
+  update the status, including reopening a report back to Submitted.
+- Role-based access: only staff can update statuses, enforced by both the UI and
+  Firestore security rules.
+- Live Firestore streams keep report lists, counters and details current.
+
+## Using and navigating the app
+
+### Signing in
 
 1. Open the app. If nobody is signed in, the Login screen appears.
 2. Enter an ALU email and password and tap Sign in, or tap Create an account.
@@ -72,7 +103,7 @@ straight to the main shell.
 ### Main navigation
 
 The bottom bar has three tabs and, for students, a raised purple plus button in
-the middle. Staff do not see the plus button because they do not create reports.
+the middle. Staff do not see the plus button because they cannot create reports.
 
 | Control | What it opens |
 |---|---|
@@ -122,26 +153,7 @@ The Profile tab is personal.
 - Tap a report in My Reports to open its details.
 - Tap the sign out icon in the top right corner and confirm to sign out.
 
-### Incident Details
-
-Tap any report card to open Incident Details. This is the main screen for
-reading and following a single report.
-
-- The summary card shows the category thumbnail or photo, title, location,
-  current status, submission date and the reporter name.
-- The Status Timeline shows the three lifecycle steps and the time each step was
-  reached. Submitted, In Progress and Resolved are always visible, so the
-  current position is clear at a glance.
-- The Description section shows the full text entered by the reporter.
-- Students see the read-only view. If the report is theirs and still Submitted,
-  the three-dot menu offers Delete report.
-- Staff see an Update Status section below the description.
-
-The details screen listens to the report document directly. If a staff member
-changes the status while a student has the report open, the student sees the new
-status and timeline without refreshing.
-
-## Report an incident
+### Report an incident
 
 Only students can create reports. Open the form from either the plus button in
 the bottom bar or the Report an Issue button on Home.
@@ -165,7 +177,26 @@ If submission fails, the form keeps the entered values so the user can retry.
 Staff accounts cannot submit reports, and the app blocks that action if it is
 reached.
 
-## Review and update a report
+### Read a report
+
+Tap any report card to open Incident Details. This is the main screen for
+reading and following a single report.
+
+- The summary card shows the category thumbnail or photo, title, location,
+  current status, submission date and the reporter name.
+- The Status Timeline shows the three lifecycle steps and the time each step was
+  reached. Submitted, In Progress and Resolved are always visible, so the
+  current position is clear at a glance.
+- The Description section shows the full text entered by the reporter.
+- Students see the read-only view. If the report is theirs and still Submitted,
+  the three-dot menu offers Delete report.
+- Staff see an Update Status section below the description.
+
+The details screen listens to the report document directly. If a staff member
+changes the status while a student has the report open, the student sees the new
+status and timeline without refreshing.
+
+### Update a report status
 
 Staff handle the review queue from the Reports tab.
 
@@ -180,7 +211,17 @@ Staff handle the review queue from the Reports tab.
 Only staff can change a status. Staff cannot create or delete reports. The same
 rules are enforced on the server, so they hold even if the UI is bypassed.
 
-## Report status meanings
+### Find and filter reports
+
+- Search works across the report title, description, location, category and
+  reporter name.
+- Status and category filters can be used together with search.
+- The Reports tab shows every report. My Reports on the Profile tab shows only
+  the signed-in student's reports.
+- Clearing the search text and selecting All on both filter rows restores the
+  full list.
+
+### Report status meanings
 
 | Status | Meaning |
 |---|---|
@@ -192,66 +233,14 @@ Every status change is stored in the report's history. The details timeline
 shows the time each status was reached, so the reporter can see how long the
 issue took to move forward.
 
-## Manage and find reports
+### Delete a report
 
-- Search works across the report title, description, location, category and
-  reporter name.
-- Status and category filters can be used together with search.
-- The Reports tab shows every report. My Reports on the Profile tab shows only
-  the signed-in student's reports.
-- A student can delete only their own report, and only while it is still
-  Submitted. Use the three-dot menu on Incident Details and confirm the delete.
-  Deletion is permanent.
-- A report that has moved to In Progress or Resolved can no longer be deleted by
-  the student.
+A student can delete only their own report, and only while it is still
+Submitted. Open the report, use the three-dot menu on Incident Details, and
+confirm the delete. Deletion is permanent. A report that has moved to In
+Progress or Resolved can no longer be deleted by the student.
 
-## Roles and permissions
-
-| Capability | Student | Staff |
-|---|---|---|
-| Register with an ALU email | Yes | No, staff accounts are created by an administrator |
-| Browse reports | Yes | Yes |
-| Create a report | Yes | No |
-| Delete their own Submitted report | Yes | No |
-| Change a report status | No | Yes |
-
-Registration always creates a Student account. Staff roles are assigned by an
-administrator in Firebase. All writes require a verified email address.
-
-## Project structure
-
-```text
-lib/
-  screens/       Screens for authentication, home, reports, report form,
-                 incident details and profile
-  providers/     AuthProvider and IncidentProvider, the app state layer
-  services/      Firebase Authentication, Firestore and image upload code
-  models/        AppUser, Incident and StatusChange
-  core/          Theme, constants, shared widgets and utilities
-test/            Model, provider and widget tests
-tool/            Demo account seed script
-REPORT.md        Full technical report
-video/           Demo recording
-```
-
-The app follows a one-way data flow: screens read from providers, providers call
-services, and services talk to Firebase. Firestore streams keep the screens up
-to date automatically.
-
-## Run the checks
-
-```bash
-flutter analyze
-flutter test
-```
-
-## Learn more
-
-The full technical report covers the architecture, Firebase data model, state
-management, security rules, UI decisions, testing strategy, limitations and
-lessons learned: [REPORT.md](REPORT.md).
-
-## Troubleshooting
+### Common issues
 
 | Problem | What to do |
 |---|---|
@@ -259,5 +248,83 @@ lessons learned: [REPORT.md](REPORT.md).
 | Sign up is rejected | Use an email ending in `@alustudent.com` or `@alueducation.com`. |
 | The plus button is missing | Staff accounts cannot create reports. Sign in with a student account. |
 | A report list is empty | Clear the search text and set the status and category filters to All. |
-| A photo will not upload | Choose a smaller image. Firebase Storage uploads are limited to 5 MB. |
+| A photo will not upload | Choose a smaller image. Photo uploads are limited to 5 MB. |
 | A student cannot delete a report | Reports can only be deleted by their owner while the status is still Submitted. |
+
+## Tech stack
+
+- Flutter (Dart)
+- Firebase Authentication and Cloud Firestore
+- Cloudinary for unsigned incident photo uploads
+- Firebase Storage as a fallback upload path when Cloudinary is not configured
+- Provider for state management
+
+## Photos
+
+Incident photos are uploaded to Cloudinary (cloud `wp2qiyr6`, unsigned preset
+`incident_unsigned`, folder `incident_photos`) when a report is submitted. The
+returned `secure_url` is stored in the incident's `photoUrl` field. The upload
+uses `incident_<incidentId>` as the public id.
+
+Photos are optional and limited to 5 MB. A selected photo can be removed before
+the report is submitted. Photos cannot be replaced after submission because the
+app does not provide report editing.
+
+The Cloudinary values can be overridden at run time. Copy
+`dart_defines.example.json`, edit the values, and run:
+
+```bash
+flutter run --dart-define-from-file=dart_defines.json
+```
+
+If the Cloudinary values are empty, the storage service falls back to Firebase
+Storage under `incident_photos/{uid}/{incidentId}.jpg`.
+
+## Firebase configuration (already done)
+
+- `lib/firebase_options.dart` contains the Android options for the Firebase
+  project `incident-report-app-1d35b`.
+- `android/app/google-services.json` is committed.
+- `firestore.rules` contains the Firestore security rules.
+- `storage.rules` contains the Firebase Storage rules.
+- `firebase.json` maps the rules files, and `.firebaserc` selects the project.
+- The iOS and web entries in `lib/firebase_options.dart` are placeholders. Run
+  `flutterfire configure` to generate them for those platforms.
+
+### Reproducing the setup on a new Firebase project
+
+If you point this code at a different Firebase project:
+
+1. Create the project in the Firebase Console and enable Email/Password sign-in
+   under Authentication. Create a Firestore database and a Storage bucket if
+   they do not exist.
+2. Run `flutterfire configure` from the project root. This regenerates
+   `lib/firebase_options.dart` and `android/app/google-services.json`.
+3. Download a service account key from Firebase Console, Project settings,
+   Service accounts. Save it as `tool/serviceAccountKey.json`. The file is
+   gitignored.
+4. Seed the demo accounts:
+
+   ```bash
+   cd tool
+   npm install
+   npm run seed
+   cd ..
+   ```
+
+   The seed script uses the Admin SDK, so it can write the staff role even
+   though the client rules only allow Student self registration.
+5. Deploy the security rules:
+
+   ```bash
+   firebase deploy --only firestore:rules,storage
+   ```
+
+6. If you use a different Cloudinary account, update your `dart_defines.json`
+   and pass it with `--dart-define-from-file=dart_defines.json`.
+
+## Documentation
+
+- Full technical report: [REPORT.md](REPORT.md)
+- Demo video: [video/demo.mkv](video/demo.mkv) - download
+- Video: https://youtu.be/kJ4RvyA9nuE
